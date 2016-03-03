@@ -21,12 +21,15 @@ public:
     ~ChatServer();
 
 signals:
+    void systemMessage(const QString &s);
 
 private slots:
     void onNewConnection();
     void onReadyRead();
+    void onDisconnected();
 
 private:
+    QString toString(QTcpSocket *socket);
     void parseLine(QTcpSocket *sender, const QString &line);
     typedef QList<QTcpSocket *> SocketList;
     QMap<QTcpSocket *, Peer> peers;

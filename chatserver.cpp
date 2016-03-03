@@ -20,7 +20,9 @@ void ChatServer::onNewConnection()
 {
     QTcpServer *server = (QTcpServer *) sender();
     QTcpSocket *socket = server->nextPendingConnection();
+    emit systemMessage(tr("New connection from %1.").arg(toString(socket)));
     connect(socket, SIGNAL(readyRead()), SLOT(onReadyRead()));
+    connect(socket, SIGNAL(disconnected()), SLOT(onDisconnected()));
 }
 
 void ChatServer::onReadyRead()
@@ -28,6 +30,21 @@ void ChatServer::onReadyRead()
     QTcpSocket *socket = (QTcpSocket *) sender();
     while (socket->canReadLine()) {
         parseLine(socket, QString::fromUtf8(socket->readLine()).trimmed());
+    }
+}
+
+void ChatServer::onDisconnected()
+{
+    QTcpSocket *socket = (QTcpSocket *) sender();
+    emit systemMessage(tr("%1 has disconnected.").arg(toString(socket)));
+}
+
+QString ChatServer::toString(QTcpSocket *socket)
+{
+    if (!peers[socket].name.isEmpty()) {
+        return QString("%3 (%1:%2)").arg(socket->peerAddress().toString()).arg(socket->peerPort()).arg(peers[socket].name);
+    } else {
+        return QString("%1:%2").arg(socket->peerAddress().toString()).arg(socket->peerPort());
     }
 }
 
@@ -44,7 +61,9 @@ void ChatServer::parseLine(QTcpSocket *sender, const QString &line)
 
         peer.room = line.mid(6).trimmed();
         rooms[peer.room].append(sender);
+        systemMessage(tr("%1 has joined %2.").arg(toString(sender)).arg(peer.room));
     } else if (line.startsWith("/nick ")) {
+        systemMessage(tr("%1 is now known as %2.").arg(toString(sender)).arg(line.mid(6).trimmed()));
         peer.name = line.mid(6).trimmed();
     } else if (!peer.name.isEmpty() && !peer.room.isEmpty()) {
         foreach (QTcpSocket *socket, rooms[peer.room]) {
