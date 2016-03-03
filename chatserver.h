@@ -1,9 +1,17 @@
 #ifndef CHATSERVER_H
 #define CHATSERVER_H
 
+#include <QMap>
 #include <QObject>
 
 class QHostAddress;
+class QTcpSocket;
+
+struct Peer
+{
+    QString name;
+    QString room;
+};
 
 class ChatServer : public QObject
 {
@@ -16,6 +24,13 @@ signals:
 
 private slots:
     void onNewConnection();
+    void onReadyRead();
+
+private:
+    void parseLine(QTcpSocket *sender, const QString &line);
+    typedef QList<QTcpSocket *> SocketList;
+    QMap<QTcpSocket *, Peer> peers;
+    QMap<QString, SocketList> rooms;
 };
 
 #endif // CHATSERVER_H
